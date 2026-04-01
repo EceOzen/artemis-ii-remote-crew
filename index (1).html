@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta property="og:title" content="10 Days. 10 Projects. — Artemis II × Code Beyond the Earth">
+<meta property="og:description" content="Tracking Christina Koch's historic lunar flyby with Python and NASA open data.">
+<title>Artemis II Mission Log — Code Beyond the Earth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700&family=Share+Tech+Mono&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --nasa-red: #FC3D21;
+  --nasa-blue: #0B3D91;
+  --nasa-dark: #060A0F;
+  --nasa-panel: #0A1628;
+  --nasa-border: #1A3A5C;
+  --nasa-dim: #2A4A6C;
+  --text-primary: #E8F4FF;
+  --text-secondary: #7AA8CC;
+  --text-dim: #3A6088;
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Barlow Condensed', sans-serif;
+  --body: 'Barlow', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--nasa-dark);
+  color: var(--text-primary);
+  font-family: var(--body);
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Starfield */
+#stars {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+}
+
+/* Top bar — NASA style */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(6, 10, 15, 0.92);
+  border-bottom: 1px solid var(--nasa-border);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  height: 52px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nasa-worm {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 8px;
+  color: var(--nasa-red);
+  text-transform: uppercase;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--nasa-border);
+}
+
+.topbar-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.mission-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #00FF88;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* Hero */
+.hero {
+  position: relative;
+  z-index: 1;
+  padding: 140px 60px 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--nasa-red);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--nasa-red);
+}
+
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.hero-title .accent { color: var(--nasa-red); }
+.hero-title .dim { color: var(--text-dim); }
+
+.hero-subtitle {
+  font-family: var(--display);
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-weight: 300;
+  color: var(--text-secondary);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+
+.hero-quote {
+  font-family: var(--body);
+  font-size: 16px;
+  font-style: italic;
+  color: var(--text-secondary);
+  border-left: 2px solid var(--nasa-red);
+  padding-left: 20px;
+  max-width: 560px;
+  line-height: 1.7;
+  margin-bottom: 48px;
+}
+
+.hero-meta {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.meta-value {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+
+/* Horizontal rule */
+.section-rule {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 60px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 60px;
+}
+
+.rule-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rule-line {
+  flex: 1;
+  height: 1px;
+  background: var(--nasa-border);
+}
+
+/* Mission grid */
+.mission-grid {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 60px 100px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+}
+
+@media (max-width: 768px) {
+  .mission-grid { grid-template-columns: 1fr; padding: 0 20px 60px; }
+  .hero { padding: 120px 20px 60px; }
+  .section-rule { padding: 0 20px; }
+  .topbar { padding: 0 20px; }
+}
+
+/* Day card */
+.day-card {
+  background: var(--nasa-panel);
+  border: 1px solid var(--nasa-border);
+  padding: 28px 32px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, background 0.2s;
+  text-decoration: none;
+  display: block;
+  cursor: default;
+}
+
+.day-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--nasa-border);
+  transition: background 0.2s;
+}
+
+.day-card.live {
+  background: #0A1E36;
+  border-color: var(--nasa-red);
+  cursor: pointer;
+}
+
+.day-card.live::before {
+  background: var(--nasa-red);
+}
+
+.day-card.live:hover {
+  background: #0D2540;
+}
+
+.day-card.upcoming {
+  opacity: 0.5;
+}
+
+/* Card header */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.day-number {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.day-card.live .day-number { color: var(--nasa-red); }
+
+.card-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border: 1px solid;
+}
+
+.badge-live {
+  color: var(--nasa-red);
+  border-color: var(--nasa-red);
+  background: rgba(252, 61, 33, 0.08);
+  animation: badge-blink 2s ease-in-out infinite;
+}
+
+@keyframes badge-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.badge-upcoming {
+  color: var(--text-dim);
+  border-color: var(--nasa-dim);
+}
+
+/* Card content */
+.card-date {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.day-card.upcoming .card-title { color: var(--text-dim); }
+
+.card-event {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.day-card.upcoming .card-event { color: var(--text-dim); }
+
+.card-desc {
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.day-card.upcoming .card-desc { color: var(--text-dim); }
+
+.card-arrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--nasa-red);
+  text-transform: uppercase;
+}
+
+.card-arrow::after {
+  content: '→';
+  font-size: 14px;
+}
+
+/* Koch highlight card */
+.day-card.featured {
+  grid-column: 1 / -1;
+  background: #0A1628;
+  border-color: #FC3D21;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  padding: 40px;
+  cursor: pointer;
+}
+
+.day-card.featured::before {
+  background: var(--nasa-red);
+  width: 3px;
+}
+
+.day-card.featured:hover {
+  background: #0D1F36;
+}
+
+.featured-left {}
+.featured-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid var(--nasa-border);
+  padding-left: 40px;
+}
+
+.featured-stat {
+  margin-bottom: 24px;
+}
+
+.stat-number {
+  font-family: var(--display);
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--nasa-red);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+@media (max-width: 768px) {
+  .day-card.featured {
+    grid-template-columns: 1fr;
+    grid-column: 1;
+  }
+  .featured-right {
+    border-left: none;
+    border-top: 1px solid var(--nasa-border);
+    padding-left: 0;
+    padding-top: 24px;
+  }
+}
+
+/* Animation embed section */
+.embed-section {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 60px 60px;
+}
+
+@media (max-width: 768px) {
+  .embed-section { padding: 0 20px 40px; }
+}
+
+.embed-wrapper {
+  border: 1px solid var(--nasa-border);
+  background: #000;
+  position: relative;
+}
+
+.embed-header {
+  background: var(--nasa-panel);
+  border-bottom: 1px solid var(--nasa-border);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.embed-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.embed-live {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--nasa-red);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.embed-live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--nasa-red);
+  animation: pulse 1.5s infinite;
+}
+
+iframe.trajectory {
+  display: block;
+  width: 100%;
+  height: 600px;
+  border: none;
+}
+
+/* About section */
+.about-section {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 60px 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .about-section { grid-template-columns: 1fr; padding: 0 20px 60px; gap: 40px; }
+}
+
+.about-title {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--nasa-red);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.about-text {
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.about-text p { margin-bottom: 16px; }
+.about-text a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tools-list {
+  list-style: none;
+  margin-top: 16px;
+}
+
+.tools-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--nasa-border);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+
+.tools-list li::before {
+  content: '▸';
+  color: var(--nasa-red);
+  font-size: 10px;
+}
+
+/* Footer */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--nasa-border);
+  padding: 32px 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: gap;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  footer { padding: 24px 20px; flex-direction: column; gap: 16px; text-align: center; }
+}
+
+.footer-left {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+
+.footer-links {
+  display: flex;
+  gap: 32px;
+}
+
+.footer-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover { color: var(--nasa-red); }
+
+/* Scanlines */
+.scanlines {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,0.015) 3px, rgba(0,0,0,0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div class="scanlines"></div>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="nasa-worm">NASA</div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-title">Artemis II Mission Log</div>
+  </div>
+  <div class="mission-status">
+    <div class="status-dot"></div>
+    <span id="mission-clock">MISSION ELAPSED TIME: CALCULATING...</span>
+  </div>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-eyebrow">Code Beyond the Earth — Mission Series</div>
+  <h1 class="hero-title">
+    10 Days.<br>
+    <span class="accent">10 Projects.</span><br>
+    <span class="dim">One Moon.</span>
+  </h1>
+  <p class="hero-subtitle">Artemis II × Open Data</p>
+  <blockquote class="hero-quote">
+    "Born too late for Apollo, just in time for Artemis. 
+    Not just as a spectator — but as a builder."
+  </blockquote>
+  <div class="hero-meta">
+    <div class="meta-item">
+      <span class="meta-label">Launch</span>
+      <span class="meta-value">APR 01, 2026</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Splashdown</span>
+      <span class="meta-value">APR 10, 2026</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Max Distance</span>
+      <span class="meta-value">413,214 KM</span>
+    </div>
+    <div class="meta-item">
+      <span class="meta-label">Data Source</span>
+      <span class="meta-value">JPL HORIZONS</span>
+    </div>
+  </div>
+</section>
+
+<!-- Trajectory embed -->
+<div class="section-rule">
+  <span class="rule-label">Live Trajectory</span>
+  <div class="rule-line"></div>
+</div>
+
+<section class="embed-section">
+  <div class="embed-wrapper">
+    <div class="embed-header">
+      <span class="embed-label">Orion Spacecraft — Real NASA Ephemeris Data</span>
+      <span class="embed-live">
+        <span class="embed-live-dot"></span>
+        191 Hourly Data Points
+      </span>
+    </div>
+    <iframe 
+      class="trajectory"
+      src="artemis_ii_telemetry.html"
+      title="Artemis II Live Trajectory">
+    </iframe>
+  </div>
+</section>
+
+<!-- Mission log grid -->
+<div class="section-rule">
+  <span class="rule-label">Mission Log</span>
+  <div class="rule-line"></div>
+</div>
+
+<section class="mission-grid">
+
+  <!-- Day 1 — LIVE -->
+  <a class="day-card featured" href="https://codebeyondtheearth.hashnode.dev" target="_blank">
+    <div class="featured-left">
+      <div class="card-header">
+        <span class="day-number">Flight Day 01</span>
+        <span class="card-badge badge-live">● Live</span>
+      </div>
+      <div class="card-date">April 1–2, 2026 — Launch + High Earth Orbit</div>
+      <div class="card-title">Tracking Artemis II's Historic Trajectory</div>
+      <div class="card-event">▸ Launch · Proximity Ops · Belt Transit · TLI</div>
+      <p class="card-desc">
+        While the countdown ticked toward zero, I queried NASA's JPL Horizons API 
+        and built a real-time trajectory animation of Orion's full 8-day path. 
+        191 data points. Speed-colored trail. Van Allen Belt radiation counter. 
+        Built in Python during the launch.
+      </p>
+      <div class="card-arrow">Read Post</div>
+    </div>
+    <div class="featured-right">
+      <div class="featured-stat">
+        <div class="stat-number">413,214</div>
+        <div class="stat-label">km — Historic distance record · First woman this far</div>
+      </div>
+      <div class="featured-stat">
+        <div class="stat-number">8,361</div>
+        <div class="stat-label">km — Closest lunar approach · Apr 7, 02:00 Istanbul</div>
+      </div>
+      <div class="featured-stat">
+        <div class="stat-number">0.41</div>
+        <div class="stat-label">km/s — Orion's slowest speed · At lunar flyby</div>
+      </div>
+    </div>
+  </a>
+
+  <!-- Day 2 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 02</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 2, 2026 — Trans-Lunar Injection</div>
+    <div class="card-title">The Burn That Escapes Earth</div>
+    <div class="card-event">▸ TLI Burn · Escape Velocity · Free-Return Trajectory</div>
+    <p class="card-desc">
+      Vis-viva equation, delta-v calculation, and the physics of escaping Earth's gravity — 
+      illustrated with real velocity data from Horizons.
+    </p>
+  </div>
+
+  <!-- Day 3 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 03</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 3, 2026 — Deep Space Transit</div>
+    <div class="card-title">Radiation — The Hidden Cost</div>
+    <div class="card-event">▸ Van Allen Belts · MARE Dosimeter · NASA PDS Data</div>
+    <p class="card-desc">
+      Fetching real Artemis I radiation measurements from NASA PDS and comparing 
+      predicted vs measured doses as Koch crosses into deep space.
+    </p>
+  </div>
+
+  <!-- Day 4 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 04</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 4, 2026 — Coast Phase</div>
+    <div class="card-title">Signals Across the Void</div>
+    <div class="card-event">▸ Deep Space Network · Signal Delay · Light Travel Time</div>
+    <p class="card-desc">
+      A real-time signal delay calculator — how long does it take Houston's voice 
+      to reach Koch as the distance grows hour by hour?
+    </p>
+  </div>
+
+  <!-- Day 5 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 05</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 5, 2026 — Lunar Sphere of Influence</div>
+    <div class="card-title">Where Earth Lets Go</div>
+    <div class="card-event">▸ L1 Lagrange Point · Gravity Transition · Sphere of Influence</div>
+    <p class="card-desc">
+      Finding the exact moment Earth's gravity yields to the Moon's — 
+      calculated from real trajectory data.
+    </p>
+  </div>
+
+  <!-- Day 6 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 06</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 6, 2026 — Far Side Approach</div>
+    <div class="card-title">What Koch Will See</div>
+    <div class="card-event">▸ LRO Imagery · LOLA Elevation · Far Side Terrain</div>
+    <p class="card-desc">
+      Using NASA LRO imagery and LOLA DEM data to visualize the exact far side 
+      region Koch will observe with her own eyes for the first time in human history.
+    </p>
+  </div>
+
+  <!-- Day 7 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 07</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 7, 2026 — Historic Record</div>
+    <div class="card-title">Furthest Woman from Earth</div>
+    <div class="card-event">▸ Distance Record · Every Crewed Mission · Animated Timeline</div>
+    <p class="card-desc">
+      At 413,214 km, Koch surpasses every record set by any woman. 
+      An animated timeline of every crewed mission distance in history.
+    </p>
+  </div>
+
+  <!-- Day 8 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 08</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 8, 2026 — Return Coast</div>
+    <div class="card-title">Artemis vs Apollo 13</div>
+    <div class="card-event">▸ Trajectory Overlay · Record Comparison · 56 Years Apart</div>
+    <p class="card-desc">
+      Overlaying Artemis II's trajectory on Apollo 13's emergency path — 
+      two record-breaking missions, 56 years apart.
+    </p>
+  </div>
+
+  <!-- Day 9 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 09</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 9, 2026 — Reentry Preparation</div>
+    <div class="card-title">25,000 mph Through Fire</div>
+    <div class="card-event">▸ Skip Reentry · Heat Shield · 5,000°F Physics</div>
+    <p class="card-desc">
+      The physics of Orion's skip reentry trajectory — 
+      why coming home from the Moon is as hard as getting there.
+    </p>
+  </div>
+
+  <!-- Day 10 -->
+  <div class="day-card upcoming">
+    <div class="card-header">
+      <span class="day-number">Flight Day 10</span>
+      <span class="card-badge badge-upcoming">Upcoming</span>
+    </div>
+    <div class="card-date">April 10, 2026 — Splashdown</div>
+    <div class="card-title">The Full Mission Dashboard</div>
+    <div class="card-event">▸ Plotly Dashboard · All 10 Days · Complete Data Story</div>
+    <p class="card-desc">
+      Every metric, every milestone, every data point from 10 days of Artemis II — 
+      wrapped in one interactive Plotly dashboard.
+    </p>
+  </div>
+
+</section>
+
+<!-- About -->
+<div class="section-rule">
+  <span class="rule-label">About This Project</span>
+  <div class="rule-line"></div>
+</div>
+
+<section class="about-section">
+  <div>
+    <div class="about-title">The Mission Log</div>
+    <div class="about-text">
+      <p>
+        This is a 10-day live coding series built during the Artemis II mission. 
+        Every project uses real NASA open data, published as the mission unfolds — 
+        one notebook and one blog post per flight day.
+      </p>
+      <p>
+        All data comes from publicly available NASA sources: 
+        JPL Horizons ephemeris system, NASA Planetary Data System, 
+        Lunar Reconnaissance Orbiter imagery, and LOLA elevation data.
+      </p>
+      <p>
+        Written by <a href="https://codebeyondtheearth.hashnode.dev" target="_blank">Ece Özen</a> — 
+        researcher at TBV, MSc Computational Science & Engineering, 
+        climate AI and Earth observation.
+      </p>
+    </div>
+  </div>
+  <div>
+    <div class="about-title">Tools & Data</div>
+    <ul class="tools-list">
+      <li>Python · NumPy · Pandas · Matplotlib</li>
+      <li>NASA JPL Horizons API</li>
+      <li>NASA Planetary Data System (PDS)</li>
+      <li>Lunar Reconnaissance Orbiter (LRO)</li>
+      <li>LOLA Lunar Elevation Data</li>
+      <li>Google Colab (all notebooks public)</li>
+      <li>Plotly (Day 10 dashboard)</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-left">© 2026 ECE ÖZEN — CODE BEYOND THE EARTH</div>
+  <div class="footer-links">
+    <a href="https://codebeyondtheearth.hashnode.dev" target="_blank">Blog</a>
+    <a href="https://github.com/EceOzen" target="_blank">GitHub</a>
+    <a href="https://www.linkedin.com/in/eceozen" target="_blank">LinkedIn</a>
+  </div>
+</footer>
+
+<script>
+// Starfield
+const canvas = document.getElementById('stars');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const stars = Array.from({length: 200}, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  r: Math.random() * 1.2,
+  o: Math.random(),
+  speed: Math.random() * 0.005 + 0.002
+}));
+
+function drawStars(t) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    const opacity = 0.2 + 0.8 * Math.abs(Math.sin(t * s.speed + s.o * 10));
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+requestAnimationFrame(drawStars);
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// Mission elapsed time
+const launch = new Date('2026-04-01T22:24:00Z');
+function updateMET() {
+  const now = new Date();
+  const diff = now - launch;
+  if (diff < 0) {
+    const abs = Math.abs(diff);
+    const h = Math.floor(abs/3600000);
+    const m = Math.floor((abs%3600000)/60000);
+    const s = Math.floor((abs%60000)/1000);
+    document.getElementById('mission-clock').textContent =
+      `L-${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  } else {
+    const h = Math.floor(diff/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    document.getElementById('mission-clock').textContent =
+      `MET +${String(h).padStart(3,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+}
+updateMET();
+setInterval(updateMET, 1000);
+
+// Auto-update day cards based on current date
+const dayDates = [
+  new Date('2026-04-01'), new Date('2026-04-02'), new Date('2026-04-03'),
+  new Date('2026-04-04'), new Date('2026-04-05'), new Date('2026-04-06'),
+  new Date('2026-04-07'), new Date('2026-04-08'), new Date('2026-04-09'),
+  new Date('2026-04-10')
+];
+</script>
+</body>
+</html>
